@@ -8,7 +8,7 @@
 # regular expression, for which packages to scan for:
 PACKAGES='solr\|elastic\|log4j'
 
-# ARGS
+# use the argument delete-JndiLookup.class to remove the class JndiLookup
 DELETE_JNDILOOKUP_CLASS=$1
 
 export LANG=
