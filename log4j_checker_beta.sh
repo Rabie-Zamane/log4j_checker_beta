@@ -8,6 +8,9 @@
 # regular expression, for which packages to scan for:
 PACKAGES='solr\|elastic\|log4j'
 
+# ARGS
+DELETE_JNDILOOKUP_CLASS=$1
+
 export LANG=
 
 RED="\033[0;31m"; GREEN="\033[32m"; YELLOW="\033[1;33m"; ENDCOLOR="\033[0m"
@@ -55,6 +58,7 @@ if [ $USER != root ]; then
 fi
 
 # Set this if you have a download for sha256 hashes
+#download_file="https://github.com/mubix/CVE-2021-44228-Log4Shell-Hashes/blob/main/sha256sums.txt"
 download_file=""
 dir_temp_hashes=$(mktemp -d)
 file_temp_hashes="$dir_temp_hashes/vulnerable.hashes"
@@ -143,6 +147,22 @@ else
   information "Cannot look for log4j inside JAR/WAR/EAR files (unzip not found)"
 fi
 [ $ok_hashes ] && rm -rf -- "$dir_temp_hashes"
+echo "find jar files that contains JndiLookup.class"
+if [ "$(command -v unzip)" ]; then
+  find_jar_files | while read -r jar_file; do
+    unzip -l "$jar_file" 2> /dev/null \
+      | grep -q -i "JndiLookup.class" \
+      && warning "$jar_file contains  file"
+    if [ "$DELETE_JNDILOOKUP_CLASS"  == "delete-JndiLookup.class" ]; then
+      unzip -l "$jar_file" 2> /dev/null \
+      | grep -q -i "JndiLookup.class" \
+      && echo "running: zip -q -d $jar_file org/apache/logging/log4j/core/lookup/JndiLookup.class" \
+      && zip -q -d $jar_file org/apache/logging/log4j/core/lookup/JndiLookup.class
+    fi
+  done
+else
+  information "Cannot look for log4j inside JAR/WAR/EAR files (unzip not found)"
+fi
 
 information "_________________________________________________"
 if [ "$JAVA" == "" ]; then
